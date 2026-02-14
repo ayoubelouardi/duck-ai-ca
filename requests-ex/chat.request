@@ -1,0 +1,99 @@
+the request
+___
+curl 'https://duck.ai/country.json' \
+  -H 'accept: */*' \
+  -H 'accept-language: fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,ar;q=0.6' \
+  -b 'access_type=dev_01' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://duck.ai/' \
+  -H 'sec-ch-ua: "Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"' \
+  -H 'sec-ch-ua-mobile: ?1' \
+  -H 'sec-ch-ua-platform: "Android"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36' ;
+curl 'https://duck.ai/duckchat/v1/auth/token' \
+  -H 'accept: */*' \
+  -H 'accept-language: fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,ar;q=0.6' \
+  -b 'access_type=dev_01' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://duck.ai/' \
+  -H 'sec-ch-ua: "Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"' \
+  -H 'sec-ch-ua-mobile: ?1' \
+  -H 'sec-ch-ua-platform: "Android"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36' ;
+curl 'https://duck.ai/privacy-pro-eligible.json' \
+  -H 'accept: */*' \
+  -H 'accept-language: fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,ar;q=0.6' \
+  -b 'access_type=dev_01' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://duck.ai/' \
+  -H 'sec-ch-ua: "Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"' \
+  -H 'sec-ch-ua-mobile: ?1' \
+  -H 'sec-ch-ua-platform: "Android"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36' ;
+curl 'https://duck.ai/duckchat/v1/status' \
+  -H 'accept: */*' \
+  -H 'accept-language: fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,ar;q=0.6' \
+  -H 'cache-control: no-store' \
+  -b 'access_type=dev_01' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://duck.ai/' \
+  -H 'sec-ch-ua: "Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"' \
+  -H 'sec-ch-ua-mobile: ?1' \
+  -H 'sec-ch-ua-platform: "Android"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36' \
+  -H 'x-vqd-accept: 1' ;
+curl 'https://duck.ai/duckchat/v1/chat' \
+  -H 'accept: text/event-stream' \
+  -H 'accept-language: fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,ar;q=0.6' \
+  -H 'content-type: application/json' \
+  -b 'access_type=dev_01' \
+  -H 'origin: https://duck.ai' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://duck.ai/' \
+  -H 'sec-ch-ua: "Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"' \
+  -H 'sec-ch-ua-mobile: ?1' \
+  -H 'sec-ch-ua-platform: "Android"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36' \
+  -H 'x-fe-signals: eyJzdGFydCI6MTc3MTExMjY4NDU1NCwiZXZlbnRzIjpbeyJuYW1lIjoic3RhcnROZXdDaGF0X2ZyZWUiLCJkZWx0YSI6MTk4fSx7Im5hbWUiOiJpbml0U3dpdGNoTW9kZWwiLCJkZWx0YSI6MTM4Mjd9XSwiZW5kIjoyNjYzNjd9' \
+  -H 'x-fe-version: serp_20260213_133053_ET-7951cec413601a1f0cb949620fa1861dcac6ffa4' \
+  -H 'x-vqd-hash-1: eyJzZXJ2ZXJfaGFzaGVzIjpbInRkRVlMSHREUFB0N0RYT0puZFJURHM2U05scVdJNnJJVmEzN3AyY2Y3MmM9IiwiQittRmJjTWhMcHJ6VzJNTGFlWXJOdEdiYzB4SmR0dUlnWS9nWWcxTitWND0iLCIwZ1c3UWx2bFNsNzdlN2pEMVE1MjlQY3U2K1ZPOGp0cjJTSGlpM2JjNHdVPSJdLCJjbGllbnRfaGFzaGVzIjpbIklCaGlRTHNudzhzbTV6aTZWZjg3UDl3blpxRndpUnFSV0RoQUU1NzR1bzg9IiwiYkdXTzZEKzM2QkpJSkpUejVCYW9kdlkvUVlvTGloOWVkdFIrNUJkd05jcz0iLCJYZENKREdITXA2OXVYT25GMWw3TWVqTGlQbE51a3FOa3lZN2pTaFFxMVg4PSJdLCJzaWduYWxzIjp7fSwibWV0YSI6eyJ2IjoiNCIsImNoYWxsZW5nZV9pZCI6IjkzZWE4Y2FlYjZkM2M5Y2UyMzVmMzZlMTBmMWJmYmM1YTA4MzdkNzRkMTNkM2U3NzJmZWRhM2M2YTg2NTMzY2FweGp6ciIsInRpbWVzdGFtcCI6IjE3NzExMTI2ODQ3NTUiLCJkZWJ1ZyI6Ilx1MDAxYVx1MDAxZSIsIm9yaWdpbiI6Imh0dHBzOi8vZHVjay5haSIsInN0YWNrIjoiRXJyb3JcbmF0IGwgKGh0dHBzOi8vZHVjay5haS9kaXN0L2R1Y2thaS1kaXN0L2VudHJ5LmR1Y2thaS5hZGVjN2VjNmNhNTc5NGM1YzMyYS5qczoyOjExNzI2OTcpXG5hdCBhc3luYyBodHRwczovL2R1Y2suYWkvZGlzdC9kdWNrYWktZGlzdC9lbnRyeS5kdWNrYWkuYWRlYzdlYzZjYTU3OTRjNWMzMmEuanM6MjoxMDczNzE0IiwiZHVyYXRpb24iOiI0MiJ9fQ==' \
+  --data-raw '{"model":"openai/gpt-oss-120b","metadata":{"customization":{"tone":"Default","length":"Short","shouldSeekClarity":false},"toolChoice":{"NewsSearch":false,"VideosSearch":false,"LocalSearch":false,"WeatherForecast":false}},"messages":[{"role":"user","content":"hello what is 2 + 2 \n\n"}],"canUseTools":true,"canUseApproxLocation":null,"durableStream":{"messageId":"cf101f87-caea-4bc1-b3d1-cab8fc4a6502","conversationId":"723f7396-95bd-45d6-bf5a-855384e23cdf","publicKey":{"alg":"RSA-OAEP-256","e":"AQAB","ext":true,"key_ops":["encrypt"],"kty":"RSA","n":"nO0M9w4n6Ee1iK1WIe3D-XKu4HJu_LcdANQNHa4LzEt_TgAsrMuJ7temjBSv2ujRLcpZxJwuuXtY69_d2gsEl7FAdUDIcG8wzHOp_BSb2CIqeG2V99zxru7-8LYu_Ze9NHQTcUoiCWr6gHXs9S7dHTTrD4iee4BQ_6GhZgssvO38AW0Zi_5CvuLUagtt5mtkRM8IVyvFxigYY-cFDqLiyDAU3erXep7lwyTxy2SWg3T9tnsTSLzYnf6QllZwrwcT81TUO-mzKuoE3NFvpL6IoTBYk2wF-0bKAr5zX5h9v-xpa7LLu6T3ay3YKUhH0sOZe4BVfLN95M_hkle8cLL9mw","use":"enc"}}}'
+___
+the respond
+___
+data: {"role":"assistant","message":"","created":1771112954,"id":"oXQBqi9-3pDw3Z-9ce075fc2ea2be0b","action":"success","model":"openai/gpt-oss-120b"}
+
+data: {"role":"assistant","message":"","created":1771112954,"id":"oXQBqi9-3pDw3Z-9ce075fc2ea2be0b","action":"success","model":"openai/gpt-oss-120b"}
+
+data: {"role":"assistant","message":"","created":1771112954,"id":"oXQBqi9-3pDw3Z-9ce075fc2ea2be0b","action":"success","model":"openai/gpt-oss-120b"}
+
+data: {"role":"assistant","message":"","created":1771112954,"id":"oXQBqi9-3pDw3Z-9ce075fc2ea2be0b","action":"success","model":"openai/gpt-oss-120b"}
+
+data: {"role":"assistant","message":"","created":1771112954,"id":"oXQBqi9-3pDw3Z-9ce075fc2ea2be0b","action":"success","model":"openai/gpt-oss-120b"}
+
+data: {"role":"assistant","message":"**","created":1771112954,"id":"oXQBqi9-3pDw3Z-9ce075fc2ea2be0b","action":"success","model":"openai/gpt-oss-120b"}
+
+data: {"role":"assistant","message":"4**","created":1771112954,"id":"oXQBqi9-3pDw3Z-9ce075fc2ea2be0b","action":"success","model":"openai/gpt-oss-120b"}
+
+data: {"role":"assistant","message":"","created":1771112954,"id":"oXQBqi9-3pDw3Z-9ce075fc2ea2be0b","action":"success","model":"openai/gpt-oss-120b"}
+
+data: {"role":"assistant","created":1771112954,"id":"oXQBqi9-3pDw3Z-9ce075fc2ea2be0b","action":"success","model":"openai/gpt-oss-120b"}
+
+data: [DONE]
+
+
