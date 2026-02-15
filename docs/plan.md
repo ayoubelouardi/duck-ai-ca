@@ -1,144 +1,132 @@
-# DuckAI API Reverse Engineering Plan
+# DuckAI API Implementation Plan
 
-## API Flow Analysis
+## Overview
+Reverse engineer DuckDuckGo AI Chat API for use as a CLI tool and Python library.
 
-Based on curl request analysis, DuckDuckGo AI uses a 4-step flow:
+## API Endpoints
 
-| Step | Order | Endpoint | Method | Purpose | Response |
-|------|-------|----------|--------|---------|----------|
-| 1 | 1 | `/country.json` | GET | Get user country | `{"country":"MA"}` |
-| 2 | 2 | `/duckchat/v1/auth/token` | GET | Get auth token | `{}` (empty or token) |
-| 3 | 3 | `/duckchat/v1/status` | GET | Get VQD token + status | `{"status":"0","secondaryStatus":"0","statusV2":0}` + VQD in headers |
-| 4 | 4 | `/duckchat/v1/chat` | POST | Send message, stream response | SSE stream ending with `[DONE]` |
+### Base URL
+```
+https://duckduckgo.com
+```
 
-## Key Headers & Parameters
+### Endpoints
 
-### Common Headers (All Requests)
-- `access_type=dev_01` cookie (bypasses restrictions)
-- Standard browser headers (User-Agent, Accept, Referer, etc.)
-- Mobile Android UA to appear legitimate
+#### 1. Get Status & VQD Token
+```
+GET /duckchat/v1/status
+```
 
-### Step 3 (Status) Specific
-- `x-vqd-accept: 1` - Tells server to return VQD token in response headers
-- Response contains `x-vqd` header with token value
+**Headers:**
+```
+accept: text/event-stream
+accept-language: en-US,en;q=0.9
+cache-control: no-cache
+content-type: application/json
+pragma: no-cache
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+origin: https://duckduckgo.com
+referer: https://duckduckgo.com/
+x-vqd-accept: 1
+```
 
-### Step 4 (Chat) Specific
-- `accept: text/event-stream` - For SSE response
-- `content-type: application/json`
-- `x-vqd: <token_from_step_3>` - VQD token for session
-- `x-fe-signals` - Base64 timing/events (optional for simplified)
-- `x-fe-version` - Frontend version (optional for simplified)
-- `x-vqd-hash-1` - Challenge/verification hash (**SKIPPED IN SIMPLIFIED VERSION**)
+**Response Headers:**
+- `x-vqd-4`: The VQD token (required for chat)
+- `x-vqd-hash-1`: Optional hash (pass if present)
 
-## Request Body (Chat)
+**Response Body:**
+```json
+{"status":"0","secondaryStatus":"0","statusV2":0}
+```
 
+#### 2. Chat
+```
+POST /duckchat/v1/chat
+```
+
+**Headers:**
+```
+accept: text/event-stream
+accept-language: en-US,en;q=0.9
+content-type: application/json
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+origin: https://duckduckgo.com
+referer: https://duckduckgo.com/
+x-vqd-4: <token from step 1>
+```
+
+**Request Body:**
 ```json
 {
-  "model": "openai/gpt-oss-120b",
-  "metadata": {
-    "customization": {
-      "tone": "Default",
-      "length": "Short",
-      "shouldSeekClarity": false
-    },
-    "toolChoice": {
-      "NewsSearch": false,
-      "VideosSearch": false,
-      "LocalSearch": false,
-      "WeatherForecast": false
-    }
-  },
+  "model": "gpt-4o-mini",
   "messages": [
-    {"role": "user", "content": "hello what is 2 + 2"}
-  ],
-  "canUseTools": true,
-  "canUseApproxLocation": null,
-  "durableStream": {
-    "messageId": "uuid-v4",
-    "conversationId": "uuid-v4",
-    "publicKey": {
-      "alg": "RSA-OAEP-256",
-      "e": "AQAB",
-      "ext": true,
-      "key_ops": ["encrypt"],
-      "kty": "RSA",
-      "n": "...base64-key...",
-      "use": "enc"
-    }
-  }
+    {"role": "user", "content": "Your question"}
+  ]
 }
 ```
 
-## Response Format (SSE)
-
+**Response:**
+Server-Sent Events (SSE) stream:
 ```
-data: {"role":"assistant","message":"","created":1234567890,"id":"...","action":"success","model":"..."}
+data: {"message":"Hello","created":1234567890,"id":"...","action":"success","model":"gpt-4o-mini"}
 
-data: {"role":"assistant","message":"Hello","created":1234567890,"id":"...","action":"success","model":"..."}
-
-data: {"role":"assistant","message":"Hello there","created":1234567890,"id":"...","action":"success","model":"..."}
+data: {"message":" there","created":1234567890,"id":"...","action":"success","model":"gpt-4o-mini"}
 
 data: [DONE]
 ```
 
-## Simplified Approach
+## Available Models
 
-### What We'll Skip (For Now)
-- [ ] `x-vqd-hash-1` challenge/verification hash generation
-- [ ] `x-fe-signals` timing signals
-- [ ] Message encryption (skip `publicKey`)
-- [ ] Tool integration (set all to false)
-- [ ] Dynamic model fetching
+- `gpt-4o-mini` (default)
+- `claude-3-haiku-20240307`
+- `meta-llama/Llama-3.3-70B-Instruct-Turbo`
+- `o3-mini`
+- `mistralai/Mistral-Small-24B-Instruct-2501`
 
-### What We'll Implement
-- [x] Standard HTTP client with cookie handling
-- [x] 4-step flow with VQD token extraction
-- [x] UUID generation for message/conversation IDs
-- [x] SSE response parsing
-- [x] Basic streaming support
-- [x] Error handling
+## Implementation Tasks
 
-## Implementation Phases
+### Core Client
+- [ ] Update BASE_URL to `https://duckduckgo.com`
+- [ ] Update VQD header to `x-vqd-4`
+- [ ] Remove JS challenge solver code
+- [ ] Simplify request body (remove encryption/complex metadata)
+- [ ] Implement proper SSE streaming
+- [ ] Add conversation history support
 
-### Phase 1: Core HTTP Client
-- Implement basic HTTP client with cookie jar
-- Add request headers matching browser
-- Implement step 1-3 (country, token, status)
-- Extract and store VQD token
+### CLI
+- [ ] Wire up chat command
+- [ ] Implement interactive mode
+- [ ] Add model selection
+- [ ] Handle errors gracefully
 
-### Phase 2: Chat Functionality
-- Implement step 4 (chat POST)
-- Parse SSE stream
-- Accumulate message chunks
-- Handle [DONE] signal
+### Testing
+- [ ] Test single chat message
+- [ ] Test streaming
+- [ ] Test conversation continuity
+- [ ] Test model switching
+- [ ] Test error handling
 
-### Phase 3: CLI Integration
-- Wire up CLI commands
-- Add interactive mode with streaming
-- Handle errors gracefully
-- Add conversation persistence
+## Architecture
 
-### Phase 4: Polish
-- Add logging/debug mode
-- Handle rate limiting
-- Retry logic
-- Better error messages
+```
+src/duckai/
+├── __init__.py          # Package exports
+├── client.py            # DuckAIClient - main API client
+└── models.py            # Data models (Message, Conversation)
 
-## Models Available
+cli/
+├── __init__.py
+└── main.py              # CLI entry point
 
-From observation:
-- `openai/gpt-oss-120b`
-- `gpt-4o-mini`
-- `claude-3-haiku`
-- `llama-3.1-70b`
-- `mixtral-8x7b`
+docs/
+├── plan.md              # This file
+└── progress.md          # Implementation progress
+```
 
-Note: Model names use provider/model format.
+## Key Design Decisions
 
-## Notes
-
-- API endpoint: `https://duck.ai` (not `duckduckgo.com`)
-- Uses SSE for streaming responses
-- Requires persistent cookies across requests
-- VQD token must be passed in `x-vqd` header for chat
-- Simplified version may have rate limits or blocks
+1. **No external dependencies**: Use only Python stdlib
+2. **Streaming support**: Real-time response streaming
+3. **Conversation history**: Maintain context across messages
+4. **Minimal complexity**: Remove unnecessary encryption/challenge logic
+5. **Proven endpoint**: Use duckduckgo.com (validated by other projects)

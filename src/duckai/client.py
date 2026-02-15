@@ -3,51 +3,233 @@
 import json
 import urllib.request
 import urllib.error
-from typing import Optional, List, Dict, Any, Generator
-from .models import Message, Conversation
+import http.cookiejar
+import uuid
+import gzip
+import zlib
+from typing import Optional, List, Dict, Any, Generator, Tuple
 
 
 class DuckAIClient:
-    """Client for interacting with DuckDuckGo AI API"""
+    """HTTP Client for interacting with DuckDuckGo AI API"""
 
     BASE_URL = "https://duckduckgo.com"
 
     def __init__(self):
-        self.session = None
-        self.vqd: Optional[str] = None
-        self.conversation_history: List[Message] = []
+        # Initialize cookie jar to persist cookies across requests
+        self.cookie_jar = http.cookiejar.CookieJar()
+        self.cookie_processor = urllib.request.HTTPCookieProcessor(self.cookie_jar)
+        self.opener = urllib.request.build_opener(self.cookie_processor)
 
-    def _get_headers(self) -> Dict[str, str]:
-        """Get request headers mimicking browser"""
-        return {
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "*/*",
+        # State
+        self.vqd: Optional[str] = None
+        self.vqd_hash: Optional[str] = None
+        self.conversation_id: Optional[str] = None
+        self.messages: List[Dict[str, str]] = []
+
+    def _get_headers(self, extra: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+        """Get request headers mimicking Chrome browser"""
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+            "Accept": "text/event-stream",
             "Accept-Language": "en-US,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",
             "Referer": "https://duckduckgo.com/",
             "Origin": "https://duckduckgo.com",
             "Connection": "keep-alive",
-            "Content-Type": "application/json",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
         }
 
-    def _get_vqd(self) -> str:
-        """Get VQD token required for requests"""
-        # TODO: Implement VQD extraction
-        raise NotImplementedError("VQD extraction not implemented yet")
+        if extra:
+            headers.update(extra)
+
+        return headers
+
+    def _decompress_response(self, response) -> bytes:
+        """Decompress gzip/deflate response if needed"""
+        encoding = response.headers.get("Content-Encoding", "").lower()
+        data = response.read()
+
+        if not data:
+            return b""
+
+        # If data starts with gzip magic numbers
+        if data[:2] == b"\x1f\x8b":
+            try:
+                return gzip.decompress(data)
+            except:
+                pass
+
+        if encoding == "gzip":
+            try:
+                return gzip.decompress(data)
+            except:
+                pass
+        elif encoding == "deflate":
+            try:
+                return zlib.decompress(data, -zlib.MAX_WBITS)
+            except:
+                try:
+                    return zlib.decompress(data)
+                except:
+                    pass
+
+        return data
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        headers: Optional[Dict[str, str]] = None,
+        data: Optional[bytes] = None,
+        return_headers: bool = False,
+    ) -> Tuple[bytes, Optional[Dict[str, str]]]:
+        """Make HTTP request with cookie support"""
+        url = f"{self.BASE_URL}{path}"
+
+        # Build request
+        req = urllib.request.Request(url, method=method)
+
+        # Add headers
+        default_headers = self._get_headers()
+        if headers:
+            default_headers.update(headers)
+
+        for key, value in default_headers.items():
+            req.add_header(key, value)
+
+        # Add data if provided
+        if data:
+            req.data = data
+
+        # Make request
+        try:
+            with self.opener.open(req) as response:
+                body = self._decompress_response(response)
+                if return_headers:
+                    headers_dict = dict(response.headers)
+                    return body, headers_dict
+                return body, None
+        except urllib.error.HTTPError as e:
+            error_body = self._decompress_response(e)
+            raise Exception(
+                f"HTTP {e.code}: {error_body.decode('utf-8', errors='ignore')}"
+            )
+        except Exception as e:
+            raise Exception(f"Request failed: {e}")
+
+    def get_vqd(self) -> str:
+        """
+        Get VQD token from status endpoint
+
+        Returns:
+            VQD token string
+        """
+        headers = {
+            "cache-control": "no-cache",
+            "pragma": "no-cache",
+            "x-vqd-accept": "1",
+        }
+
+        body, resp_headers = self._request(
+            "GET", "/duckchat/v1/status", headers=headers, return_headers=True
+        )
+
+        # Extract VQD from response headers
+        if resp_headers:
+            self.vqd = resp_headers.get("x-vqd-4")
+            self.vqd_hash = resp_headers.get("x-vqd-hash-1")
+
+        if not self.vqd:
+            raise Exception("Failed to get VQD token from response headers")
+
+        return self.vqd
 
     def chat(self, message: str, model: str = "gpt-4o-mini") -> str:
         """
-        Send a chat message and get response
+        Send a chat message and get full response
 
         Args:
-            message: The message to send
-            model: Model to use (gpt-4o-mini, claude-3-haiku, etc.)
+            message: Message to send
+            model: Model to use
 
         Returns:
-            AI response text
+            Complete response text
         """
-        # TODO: Implement chat functionality
-        raise NotImplementedError("Chat not implemented yet")
+        # Get VQD if not available
+        if not self.vqd:
+            self.get_vqd()
+
+        # Add message to history
+        self.messages.append({"role": "user", "content": message})
+
+        # Build request
+        payload = {"model": model, "messages": self.messages}
+
+        headers = {"content-type": "application/json", "x-vqd-4": self.vqd}
+
+        # Add hash if available
+        if self.vqd_hash:
+            headers["x-vqd-hash-1"] = self.vqd_hash
+
+        data = json.dumps(payload).encode("utf-8")
+
+        # Make request and stream response
+        url = f"{self.BASE_URL}/duckchat/v1/chat"
+        req = urllib.request.Request(url, method="POST")
+
+        # Add headers
+        default_headers = self._get_headers()
+        for key, value in default_headers.items():
+            req.add_header(key, value)
+        for key, value in headers.items():
+            req.add_header(key, value)
+
+        req.data = data
+
+        # Collect response
+        response_chunks = []
+
+        with self.opener.open(req) as response:
+            # Get new VQD from response headers
+            new_vqd = response.headers.get("x-vqd-4")
+            if new_vqd:
+                self.vqd = new_vqd
+
+            # Read streaming response
+            buffer = b""
+            while True:
+                chunk = response.read(1024)
+                if not chunk:
+                    break
+                buffer += chunk
+
+                # Process complete lines
+                while b"\n" in buffer:
+                    line, buffer = buffer.split(b"\n", 1)
+                    line_str = line.decode("utf-8").strip()
+
+                    if line_str.startswith("data: "):
+                        data_str = line_str[6:]
+                        if data_str == "[DONE]":
+                            break
+
+                        try:
+                            event_data = json.loads(data_str)
+                            message_chunk = event_data.get("message", "")
+                            if message_chunk:
+                                response_chunks.append(message_chunk)
+                        except json.JSONDecodeError:
+                            continue
+
+        # Add assistant response to history
+        full_response = "".join(response_chunks)
+        if full_response:
+            self.messages.append({"role": "assistant", "content": full_response})
+
+        return full_response
 
     def stream_chat(
         self, message: str, model: str = "gpt-4o-mini"
@@ -56,15 +238,95 @@ class DuckAIClient:
         Stream chat response
 
         Args:
-            message: The message to send
+            message: Message to send
             model: Model to use
 
         Yields:
-            Chunks of the response
+            Response chunks as they arrive
         """
-        # TODO: Implement streaming chat
-        raise NotImplementedError("Streaming chat not implemented yet")
+        # Get VQD if not available
+        if not self.vqd:
+            self.get_vqd()
+
+        # Add message to history
+        self.messages.append({"role": "user", "content": message})
+
+        # Build request
+        payload = {"model": model, "messages": self.messages}
+
+        headers = {"content-type": "application/json", "x-vqd-4": self.vqd}
+
+        # Add hash if available
+        if self.vqd_hash:
+            headers["x-vqd-hash-1"] = self.vqd_hash
+
+        data = json.dumps(payload).encode("utf-8")
+
+        # Make request
+        url = f"{self.BASE_URL}/duckchat/v1/chat"
+        req = urllib.request.Request(url, method="POST")
+
+        # Add headers
+        default_headers = self._get_headers()
+        for key, value in default_headers.items():
+            req.add_header(key, value)
+        for key, value in headers.items():
+            req.add_header(key, value)
+
+        req.data = data
+
+        # Stream response
+        full_response = []
+
+        with self.opener.open(req) as response:
+            # Get new VQD from response headers
+            new_vqd = response.headers.get("x-vqd-4")
+            if new_vqd:
+                self.vqd = new_vqd
+
+            # Read streaming response
+            buffer = b""
+            while True:
+                chunk = response.read(1024)
+                if not chunk:
+                    break
+                buffer += chunk
+
+                # Process complete lines
+                while b"\n" in buffer:
+                    line, buffer = buffer.split(b"\n", 1)
+                    line_str = line.decode("utf-8").strip()
+
+                    if line_str.startswith("data: "):
+                        data_str = line_str[6:]
+                        if data_str == "[DONE]":
+                            # Add full response to history
+                            complete = "".join(full_response)
+                            if complete:
+                                self.messages.append(
+                                    {"role": "assistant", "content": complete}
+                                )
+                            return
+
+                        try:
+                            event_data = json.loads(data_str)
+                            message_chunk = event_data.get("message", "")
+                            if message_chunk:
+                                full_response.append(message_chunk)
+                                yield message_chunk
+                        except json.JSONDecodeError:
+                            continue
+
+    def clear_history(self):
+        """Clear conversation history"""
+        self.messages = []
 
     def get_available_models(self) -> List[str]:
         """Get list of available AI models"""
-        return ["gpt-4o-mini", "claude-3-haiku", "llama-3.1-70b", "mixtral-8x7b"]
+        return [
+            "gpt-4o-mini",
+            "claude-3-haiku-20240307",
+            "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+            "o3-mini",
+            "mistralai/Mistral-Small-24B-Instruct-2501",
+        ]
