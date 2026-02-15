@@ -9,6 +9,14 @@ import gzip
 import zlib
 from typing import Optional, List, Dict, Any, Generator, Tuple
 
+# Optional Brotli support
+try:
+    import brotli
+
+    HAS_BROTLI = True
+except ImportError:
+    HAS_BROTLI = False
+
 
 class DuckAIClient:
     """HTTP Client for interacting with DuckDuckGo AI API"""
@@ -33,7 +41,7 @@ class DuckAIClient:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
             "Accept": "text/event-stream",
             "Accept-Language": "en-US,en;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Encoding": "gzip, deflate",
             "Referer": "https://duckduckgo.com/",
             "Origin": "https://duckduckgo.com",
             "Connection": "keep-alive",
@@ -48,12 +56,19 @@ class DuckAIClient:
         return headers
 
     def _decompress_response(self, response) -> bytes:
-        """Decompress gzip/deflate response if needed"""
+        """Decompress gzip/deflate/brotli response if needed"""
         encoding = response.headers.get("Content-Encoding", "").lower()
         data = response.read()
 
         if not data:
             return b""
+
+        # Try Brotli first if available
+        if encoding == "br" and HAS_BROTLI:
+            try:
+                return brotli.decompress(data)
+            except:
+                pass
 
         # If data starts with gzip magic numbers
         if data[:2] == b"\x1f\x8b":
@@ -122,7 +137,9 @@ class DuckAIClient:
 
     def get_vqd(self) -> str:
         """
-        Get VQD token from status endpoint
+        Get VQD token from status endpoint.
+        Note: This requires a normal residential IP. Data centers/VPNs may receive
+        a JS challenge instead of the VQD token.
 
         Returns:
             VQD token string
@@ -143,7 +160,17 @@ class DuckAIClient:
             self.vqd_hash = resp_headers.get("x-vqd-hash-1")
 
         if not self.vqd:
-            raise Exception("Failed to get VQD token from response headers")
+            error_msg = "Failed to get VQD token from response headers"
+            if self.vqd_hash:
+                error_msg += (
+                    "\n\nThe server returned a JS challenge (x-vqd-hash-1) instead of a VQD token. "
+                    "This typically happens when the request comes from:\n"
+                    "  - A data center or cloud server\n"
+                    "  - A VPN or proxy\n"
+                    "  - An automated/suspicious source\n\n"
+                    "Try running from a normal residential IP address."
+                )
+            raise Exception(error_msg)
 
         return self.vqd
 
